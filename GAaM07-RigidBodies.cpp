@@ -8,27 +8,6 @@
 #include <algorithm>
 #include <iostream>
 
-// Helper Functions for working with Vector2f
-
-float length(const sf::Vector2f& v)
-{
-    return std::sqrt(v.x * v.x + v.y * v.y);
-}
-
-sf::Vector2f normalise(const sf::Vector2f& v)
-{
-    float length = std::sqrt(v.x * v.x + v.y * v.y);
-    if (length != 0)
-    {
-        return sf::Vector2f(v.x / length, v.y / length);
-    }
-    return v;
-}
-
-float dot(const sf::Vector2f& a, const sf::Vector2f b)
-{
-    return a.x * b.x + a.y * b.y;
-}
 
 class RigidBody
 {
@@ -551,22 +530,3 @@ int main()
         window.display();
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//Augmented Neo-Eorzean Regular

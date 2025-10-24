@@ -130,6 +130,9 @@
   <ItemGroup>
     <ClCompile Include="GAaM07-RigidBodies.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Vector2Utils.h" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
