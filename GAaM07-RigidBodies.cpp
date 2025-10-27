@@ -8,149 +8,8 @@
 #include <algorithm>
 #include <iostream>
 
-
-class RigidBody
-{
-public:
-    sf::Vector2f position, velocity, acceleration;
-
-    float mass, radius, restitution, friction;
-    sf::Color colour;
-
-    bool isStatic, isResting;
-
-    //Thresholds
-    static constexpr float REST_VELOCITY_THRESHOLD = 5.0f, REST_ACCELERATION_THRESHOLD = 10.0f;
-
-    RigidBody(sf::Vector2f pos, float r, float m, sf::Color col, bool stat = false)
-        :position(pos), radius(r), mass(m), colour(col), isStatic(stat),
-        velocity(0.0f, 0.0f), acceleration(0.0f, 0.0f), restitution(0.8f),
-        friction(0.3f), isResting(false)
-    {
-
-    }
-
-    void applyForce(const sf::Vector2f& force) 
-    {
-        if (!isStatic && !isResting)
-        {
-            acceleration += force / mass;
-        }
-    }
-    void update(float deltaTime)
-    {
-        if (!isStatic)
-        {
-            float velocityMagnitude = length(velocity);
-            float accelerationMagnitude = length(acceleration);
-
-            if (velocityMagnitude < REST_VELOCITY_THRESHOLD && accelerationMagnitude < REST_ACCELERATION_THRESHOLD)
-            {
-                velocity = sf::Vector2f(0.0f, 0.0f);
-                acceleration = sf::Vector2f(0.0f, 0.0f);
-                isResting = true;
-            }
-            else
-            {
-                isResting = false;
-            }
-
-            if (!isResting)
-            {
-                //Euler
-                velocity += acceleration * deltaTime;
-                position += velocity * deltaTime;
-
-                //Dampening - Simulate Air Resistance
-                velocity *= 0.995f;
-            }
-            acceleration = sf::Vector2f(0.0f, 0.0f);
-        }
-    }
-
-    void checkBoundaryCollision(float width, float height)
-    {
-        if (!isStatic)
-        {
-            //check collision with boundaries
-
-            //horizontal
-            if (position.x - radius < 0)
-            {
-                position.x = radius;
-                velocity.x = -velocity.x * restitution;
-
-                //friction
-                velocity.y *= (1.0f - friction);
-                isResting = false;
-            }
-            if (position.x + radius > width) // if position.x is outside of screen width
-            {
-                position.x = width - radius;
-                velocity.x = -velocity.x * restitution;
-
-                velocity.y *= (1.0f - friction);
-                isResting = false;
-            }
-
-            //vertical
-            if (position.y - radius < 0)
-            {
-                position.y = radius;
-                velocity.y = -velocity.y * restitution;
-
-                //friction
-                velocity.x *= (1.0f - friction);
-                isResting = false;
-            }
-            if (position.y + radius > height) // if position.y is outside of screen height
-            {
-                position.y = height - radius;
-                velocity.y = -velocity.y * restitution;
-
-                velocity.x *= (1.0f - friction);
-                isResting = false;
-            }
-        }
-    }
-
-    void draw(sf::RenderWindow& window)
-    {
-        sf::CircleShape shape(radius);
-        shape.setPosition(position - sf::Vector2f(radius, radius));
-
-        //shorthand if
-        //float eitherOneORZero = true ? 1 : 0;
-
-        sf::Color displayColour = isResting ? sf::Color(colour.r/2, colour.g/2, colour.b/2) : colour; // ? is short hand if statement, so if resting colour.r etc else colour
-        shape.setFillColor(displayColour);
-
-        shape.setOutlineThickness(2.0f);
-        shape.setOutlineColor(sf::Color(static_cast<float>(displayColour.r * 0.7), 
-            static_cast<float>(displayColour.g * 0.7), 
-            static_cast<float>(displayColour.b * 0.7)));
-
-        window.draw(shape);
-
-        //velocity vector arrow
-
-        if (!isStatic && !isResting)
-        {
-            std::array line =
-            {
-                sf::Vertex(sf::Vector2f(position), sf::Color(255,255,0,128)),
-                sf::Vertex(sf::Vector2f(position + normalise(velocity) * (radius * 1.5f)), sf::Color(255,255,0,128))
-            };
-
-            window.draw(line.data(), line.size(), sf::PrimitiveType::Lines);
-        }
-    }
-
-    void wake()
-    {
-        isResting = false;
-    }
-};
+#include "Vector2Utils.h" // PhysicsUtils::
+#include "RigidBody.h"
 
 //physics engine class
 class PhysicsEngine
@@ -218,7 +77,7 @@ public:
     void checkCollision(RigidBody& body1, RigidBody& body2)
     {
         sf::Vector2f difference = body2.position - body1.position;
-
+        
         float distance = length(difference);
         float minDistance = body1.radius + body2.radius;
 
