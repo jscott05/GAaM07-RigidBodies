@@ -3,14 +3,14 @@
 
 using namespace PhysicsUtils;
 
-    PhysicsEngine::PhysicsEngine(float width, float height) : 
+PhysicsEngine::PhysicsEngine(float width, float height) :
         worldWidth(width), worldHeight(height), gravity(0.0f, 500.0f)
     {
 
     }
 
 
-    void PhysicsEngine::addBody(std::unique_ptr<RigidBody> body)
+void PhysicsEngine::addBody(std::unique_ptr<RigidBody> body)
     {
         bodies.push_back(std::move(body));
     }
@@ -90,7 +90,7 @@ using namespace PhysicsUtils;
     //body 2 - receives the impulse of -j (same magnitude, but in an opposite direction)
     //the total momentum is conserved 
 
-    void checkCollision(RigidBody& body1, RigidBody& body2)
+    void PhysicsEngine::checkCollision(RigidBody& body1, RigidBody& body2)
     {
         //step 1 - collision detection ( NARROW PHASE )
         sf::Vector2f difference = body2.position - body1.position;
@@ -255,12 +255,12 @@ using namespace PhysicsUtils;
 
             //visual sugar
             //create a particle burst at the point of impact
-            float impactInensity = std::abs(j) / 100.f;
+            float impactIntensity = std::abs(j) / 100.f;
             sf::Color averageColour(  (body1.getColour().r + body2.getColour().r) / 2,
                 (body1.getColour().g + body2.getColour().g) / 2,(body1.getColour().b + body2.getColour().b) / 2);
 
             //call to particle system to create a burst of colours at the given point, with the given colours
-
+            particleSystem.createImpactBurst(contactPoint, normal, averageColour, std::min(1.0f, impactIntensity))
 
             //step 6: APPLY the IMPULSE - newtons third law!
 
@@ -330,15 +330,37 @@ using namespace PhysicsUtils;
 
     }
 
-    void draw(sf::RenderWindow& window)
+    void PhysicsEngine::draw(sf::RenderWindow& window, bool showVelocity, bool showTrails, bool showDebug)
     {
+        // draw particles
+
+        // draw motion trails
+
+        if (showTrails)
+        {
+            for (auto& body : bodies)
+            {
+                body->drawMotionTrail(window);
+            }
+        }
+
+        // draw bodies (glows, main shapes, cores, rotation indicators)
         for (auto& body : bodies)
         {
-            body->draw(window);
+            body->draw(window, showVelocity);
+        }
+
+        // debug visualisations
+        if (showDebug)
+        {
+            for (auto& body : bodies)
+            {
+                body->drawDebug(window);
+            }
         }
     }
 
-    void setGravity(const sf::Vector2f& g)
+    void PhysicsEngine::setGravity(const sf::Vector2f& g)
     {
         gravity = g;
         for (auto& body : bodies)
@@ -350,7 +372,7 @@ using namespace PhysicsUtils;
 
     //next session we will figure out the call to finding bodies at specific locations
 
-    RigidBody* getBodyAt(const sf::Vector2f& point)
+    RigidBody* PhysicsEngine::getBodyAt(const sf::Vector2f& point)
     {
         for (auto& body : bodies)
         {

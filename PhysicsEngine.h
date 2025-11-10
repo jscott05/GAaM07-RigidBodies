@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 #include "RigidBody.h"
+#include "ParticleSystem.h"
 
 class PhysicsEngine
 {
@@ -13,7 +14,7 @@ public:
 	void draw(sf::RenderWindow& window, bool showVelocity, bool showTrails, bool showDebug);
 
 	//setters for gravity
-	void setGravity(sf::Vector2f& g);
+	void setGravity(const sf::Vector2f& g);
 	sf::Vector2f getGravity();
 
 	//helper function for getting the body at a specific point
@@ -25,6 +26,8 @@ private:
 	void checkCollision(RigidBody& body1, RigidBody& body2);
 
 	std::vector<std::unique_ptr<RigidBody>> bodies;
+	
+	ParticleSystem particleSystem;
 
 	sf::Vector2f gravity;
 	float worldWidth;

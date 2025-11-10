@@ -374,8 +374,7 @@ void RigidBody::updateCollisionInfo(float deltaTime)
     collisionInfo.erase(
         std::remove_if(collisionInfo.begin(), collisionInfo.end(),
             [](const CollisionInfo& info)
-            { return info.lifetime <= 0.0f; })
-    );
+            { return info.lifetime <= 0.0f; }), collisionInfo.end());
 }
 void RigidBody::wake()
 {
