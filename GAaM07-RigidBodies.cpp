@@ -11,6 +11,9 @@
 #include "Vector2Utils.h" // PhysicsUtils::
 #include "RigidBody.h"
 
+
+using namespace PhysicsUtils; // idk if we add this but i added it to try make it compile
+
 //physics engine class
 class PhysicsEngine
 {
@@ -204,7 +207,7 @@ public:
     {
         for (auto& body : bodies)
         {
-            body->draw(window);
+            body->draw(window, true);
         }
     }
 
