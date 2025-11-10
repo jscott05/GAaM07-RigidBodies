@@ -129,9 +129,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="GAaM07-RigidBodies.cpp" />
+    <ClCompile Include="PhysicsEngine.cpp" />
     <ClCompile Include="RigidBody.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="PhysicsEngine.h" />
     <ClInclude Include="RigidBody.h" />
     <ClInclude Include="Vector2Utils.h" />
   </ItemGroup>
