@@ -4,7 +4,7 @@
 using namespace PhysicsUtils;
 
 PhysicsEngine::PhysicsEngine(float width, float height) :
-        worldWidth(width), worldHeight(height), gravity(0.0f, 500.0f)
+	worldWidth(width), worldHeight(height), gravity(0.0f, 500.0f), spatialGrid(width, height, 100.0f)
     {
 
     }
@@ -52,24 +52,26 @@ void PhysicsEngine::addBody(std::unique_ptr<RigidBody> body)
             body->checkBoundaryCollision(worldWidth, worldHeight);
         }
 
+		updateSpatialGrid();
+		auto potentialCollisions = spatialGrid.getPotentialCollisions();
+
         //check for collisions between bodies O(n^2) 
         //example: we have 100 bodies = 4950 checks, 200 bodies = 19,900 
-        for (size_t i = 0; i < bodies.size(); ++i)
+        for (const auto& pair : potentialCollisions)
         {
-            for (size_t j = i + 1; j < bodies.size(); ++j)
+            if ((pair.first->getIsStatic() || pair.first->getIsResting())
+				&& (pair.second->getIsStatic() || pair.second->getIsResting()))
             {
-                if (bodies[i]->getIsStatic() && bodies[j]->getIsStatic())
-                {
-                    continue;
-                }
-                //at this point here we will do the collision checks where we compare every particle to every other particle
-                checkCollision(*bodies[i], *bodies[j]);
+                continue;
             }
+
+			checkCollision(*pair.first, *pair.second);
+
         }
 
         //passing a call on to our particle system. 
-        
-
+       
+		particleSystem.update(deltaTime);
     }
 
 
@@ -161,12 +163,12 @@ void PhysicsEngine::addBody(std::unique_ptr<RigidBody> body)
             else if (!body1.isStatic)
             {
                 //body 1 is dynamic
-                body1.position -= normal * (overlap);
+                body1.position -= normal * (overlap * seperationFactor);
             }
             else if (!body2.isStatic)
             {
                 //body 2 is dynamic
-                body2.position += normal * (overlap);
+                body2.position += normal * (overlap * seperationFactor);
             }
             //case 3, both are static 
 
@@ -230,9 +232,15 @@ void PhysicsEngine::addBody(std::unique_ptr<RigidBody> body)
             if (!body1.getIsStatic()) invMassSum += 1.f / body1.getMass();
             if (!body2.getIsStatic()) invMassSum += 1.f / body2.getMass();
 
+
+			//cross product - scalar for rotation effects
+			float r1CrossN = cross(r1, normal);
+			float r2CrossN = cross(r2, normal);
+
             //rotation will be added later
             float invInertiaSum = 0.0f;
-
+			if (!body1.getIsStatic()) invInertiaSum += (r1CrossN * r1CrossN) / body1.getInertia();
+            if (!body2.getIsStatic()) invInertiaSum += (r2CrossN * r2CrossN) / body2.getInertia();
             //impulse formula (derived from conservation of momentum and energy)
             // j = -(1 + e) * v_rel_n / (1/m1 + 1/m2 + rotational_terms)
 
@@ -260,7 +268,7 @@ void PhysicsEngine::addBody(std::unique_ptr<RigidBody> body)
                 (body1.getColour().g + body2.getColour().g) / 2,(body1.getColour().b + body2.getColour().b) / 2);
 
             //call to particle system to create a burst of colours at the given point, with the given colours
-            particleSystem.createImpactBurst(contactPoint, normal, averageColour, std::min(1.0f, impactIntensity))
+            particleSystem.createImpactBurst(contactPoint, normal, averageColour, std::min(1.0f, impactIntensity));
 
             //step 6: APPLY the IMPULSE - newtons third law!
 
@@ -282,10 +290,12 @@ void PhysicsEngine::addBody(std::unique_ptr<RigidBody> body)
             if (!body1.isStatic)
             {
                 body1.velocity -= impulse / body1.mass;
+				body1.setAngularVelocity(body1.getAngularVelocity() - cross(r1, impulse) / body1.getInertia());
             }
             if (!body2.isStatic)
             {
                 body2.velocity += impulse / body2.mass;
+				body2.setAngularVelocity(body2.getAngularVelocity() + cross(r2, impulse) / body2.getInertia());
             }
 
 
@@ -295,39 +305,55 @@ void PhysicsEngine::addBody(std::unique_ptr<RigidBody> body)
             {
                 tangent = normalise(tangent);
 
+				//average friction coefficient of both materials
                 float frictionCoEff = (body1.friction + body2.friction) * 0.5f;
+                
+				// friction impulse magnitude
+				// similar formula to normal impulse but using tangent direction
                 float jt = -dot(relativeVelocity, tangent);
 
-                if (!body1.isStatic && !body2.isStatic)
-                {
-                    jt /= (1 / body1.mass + 1 / body2.mass);
-                }
-                else if (!body1.isStatic)
-                {
-                    jt /= (1 / body2.mass);
-                }
-                else if (!body2.isStatic)
-                {
-                    jt /= (1 / body1.mass);
-                }
+                // coulomb friction law
+				// friction force limited by normal force
+				// mu = coefficient of friction
+				// f_friction < mu * f_normal
 
-                //coulombs law: limit friction
-                float frictionLimit = std::abs(j * frictionCoEff);
-                jt = std::clamp(jt, -frictionLimit, frictionLimit);
+				float frictionLimit = std::abs(j * frictionCoEff);
+				jt = std::clamp(jt, -frictionLimit, frictionLimit);
+                
+
 
                 sf::Vector2f frictionImpulse = jt * tangent;
                 if (!body1.isStatic)
                 {
                     body1.velocity -= frictionImpulse / body1.mass;
+					body1.setAngularVelocity(body1.getAngularVelocity() - cross(r1, frictionImpulse) / body1.getInertia());
                 }
                 if (!body2.isStatic)
                 {
                     body2.velocity += frictionImpulse / body2.mass;
+					body2.setAngularVelocity(body2.getAngularVelocity() + cross(r2, frictionImpulse) / body2.getInertia());
                 }
 
             }
         }
 
+    }
+
+    void PhysicsEngine::updateSpatialGrid()
+    {
+        spatialGrid.clear();
+        for (auto& body : bodies)
+        {
+            spatialGrid.insert(body.get());
+		}
+    }
+
+    void PhysicsEngine::drawBatchedGlows(sf::RenderWindow& window)
+    {
+    }
+
+    void PhysicsEngine::drawBatchedTrails(sf::RenderWindow& window)
+    {
     }
 
     void PhysicsEngine::draw(sf::RenderWindow& window, bool showVelocity, bool showTrails, bool showDebug)
@@ -384,4 +410,4 @@ void PhysicsEngine::addBody(std::unique_ptr<RigidBody> body)
         }
         return nullptr;
     }
-};
+

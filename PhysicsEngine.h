@@ -2,6 +2,7 @@
 #include <memory>
 #include "RigidBody.h"
 #include "ParticleSystem.h"
+#include "SpatialGrid.h"
 
 class PhysicsEngine
 {
@@ -24,13 +25,20 @@ public:
 
 private:
 	void checkCollision(RigidBody& body1, RigidBody& body2);
+	void updateSpatialGrid();
+	void drawBatchedGlows(sf::RenderWindow& window);
+	void drawBatchedTrails(sf::RenderWindow& window);
+
 
 	std::vector<std::unique_ptr<RigidBody>> bodies;
 	
 	ParticleSystem particleSystem;
+	SpatialGrid spatialGrid;
 
 	sf::Vector2f gravity;
 	float worldWidth;
 	float worldHeight; 
+
+	sf::VertexArray glowVertices, trailVertices;
 };
 

@@ -27,10 +27,9 @@ public:
 	}
 	bool isDead() const { return lifetime <= 0.0f; }
 
-	// idk what i broke
-	// float getAlpha() const P {	return (lifetime / maxLifetime) * 255.0f; }
-	float getAlpha()
+	float getAlpha() const
 	{
+		//const;
 		return (lifetime / maxLifetime) * 255.0f;
 	}
 
@@ -61,6 +60,11 @@ private:
 
 	// RNG
 	std::mt19937 gen{ std::random_device{}() };
+
+	// Batched rendering, store all particles and instead of individual drawing
+	// Draw one big array
+	sf::VertexArray particleVertices;
+	sf::VertexArray glowVertices;
 
 	static constexpr size_t MAX_PARTICLES = 500;
 };
