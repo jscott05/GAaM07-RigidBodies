@@ -12,6 +12,7 @@
 //#include "RigidBody.h"
 #include "PhysicsEngine.h"
 //#include "ParticleSystem.h"
+#include "UIControls.h"
 
 //using namespace PhysicsUtils; // idk if we add this but i added it to try make it compile
 
@@ -52,6 +53,8 @@ int main()
         physics.addBody(std::make_unique<RigidBody>(position, radius, mass, colour));
 
     }
+
+    UIControls ui(font);
 
     // Drag Stuff | Mouse Interaction Variables
     RigidBody* draggedBody = nullptr;
@@ -118,14 +121,14 @@ int main()
 
             if (const auto* mouseMoved = event->getIf<sf::Event::MouseMoved>())
             {
-                if (draggedBody && !draggedBody->isStatic)
+                if (draggedBody && !draggedBody->getIsStatic())
                 {
                     //cast into vector
                     sf::Vector2f mousePos(mouseMoved->position.x, mouseMoved->position.y);
 
                     sf::Vector2f targetPos = mousePos + dragOffset;
 
-                    draggedBody->velocity = (targetPos - draggedBody->position) * 10.0f;
+                    draggedBody->setVelocity((targetPos - draggedBody->getPosition()) * 10.0f);
                 }
             }
 
@@ -168,9 +171,12 @@ int main()
         physics.update(deltaTime);
 
         //Render stuff
+
+
         window.clear(sf::Color(20,20,30));
         physics.draw(window, false, false, false);
         //window.draw(it);
+        ui.draw(window);
         window.display();
     }
 }

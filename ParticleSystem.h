@@ -42,9 +42,8 @@ public:
 
 	// create particle burst at collision point
 	// rand dist - natural variation (angle, size, speed)
-	void createImpactBurst(sf::Vector2f position, sf::Vector2f normal, sf::Color colour, float intensity)
-	{
-	}
+	void createImpactBurst(sf::Vector2f position, sf::Vector2f normal, sf::Color colour, float intensity);
+
 
 	// updating all controlled particles
 	// move calls, decrease lifetime, removing dead particles

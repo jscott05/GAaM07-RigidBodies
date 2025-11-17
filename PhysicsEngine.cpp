@@ -336,7 +336,6 @@ void PhysicsEngine::addBody(std::unique_ptr<RigidBody> body)
 
             }
         }
-
     }
 
     void PhysicsEngine::updateSpatialGrid()
@@ -350,24 +349,101 @@ void PhysicsEngine::addBody(std::unique_ptr<RigidBody> body)
 
     void PhysicsEngine::drawBatchedGlows(sf::RenderWindow& window)
     {
+		glowVertices.clear();
+        glowVertices.setPrimitiveType(sf::PrimitiveType::Triangles);
+
+        const int glowLayers = 3;
+        const int segments = 16;
+
+        for (const auto& body : bodies)
+        {
+			if (body->getIsStatic()) continue;
+
+            sf::Vector2f position = body->getPosition();
+			float radius = body->getRadius();
+            sf::Color colour = body->getColour();
+            float impactIntensity = body->impactIntensity;
+			bool isResting = body->getIsResting();
+            
+            // calculate display colour
+            sf::Color displayColour = isResting ? 
+                sf::Color(colour.r / 2, colour.g / 2, colour.b / 2) : colour;
+
+            float flashIntensity = impactIntensity * 100.0f;
+
+			displayColour.r = std::min(255, static_cast<int>(displayColour.r + flashIntensity));
+			displayColour.g = std::min(255, static_cast<int>(displayColour.g + flashIntensity));
+            displayColour.b = std::min(255, static_cast<int>(displayColour.b + flashIntensity));
+
+            // draw glow layers as triangle fans
+
+            for(int layer = glowLayers; layer > 0; --layer)
+            {
+                float glowRadius = radius + (layer * 4.0f) + (impactIntensity * 5.0f);
+
+				float alpha = isResting ? 10.0f : 20.0f;
+                alpha = alpha / (layer + 1) + (impactIntensity * 30.0f);
+
+                sf::Color glowColour(displayColour.r, displayColour.g, displayColour.b, static_cast<uint8_t>(alpha));
+			
+                for (int i = 0; i < segments; ++i)
+                {
+                    // create triangle fan for circle
+                    float angle1 = (i * 2.0f * 3.14159265f) / segments;
+					float angle2 = ((i + 1) * 2.0f * 3.14159265f) / segments;
+
+					sf::Vector2f p1 = position + sf::Vector2f(std::cos(angle1) * glowRadius, std::sin(angle1) * glowRadius);
+                    sf::Vector2f p2 = position + sf::Vector2f(std::cos(angle2) * glowRadius, std::sin(angle2) * glowRadius);
+
+					glowVertices.append(sf::Vertex(position, glowColour));
+					glowVertices.append(sf::Vertex(p1, glowColour));
+                    glowVertices.append(sf::Vertex(p2, glowColour));
+                }
+			}
+
+        }
+
+        window.draw(glowVertices);
     }
 
     void PhysicsEngine::drawBatchedTrails(sf::RenderWindow& window)
     {
+        trailVertices.clear();
+        trailVertices.setPrimitiveType(sf::PrimitiveType::Triangles);
+
+        for (const auto& body : bodies)
+        {
+			const auto& trail = body->getMotionTrail();
+            sf::Color colour = body->getColour();
+			if (trail.size() < 2) continue;
+
+            for(size_t i = 1; i < trail.size(); ++i)
+            {
+				uint8_t alpha = static_cast<uint8_t>(trail[i].alpha * 250);
+
+				sf::Color trailColour(colour.r, colour.g, colour.b, alpha);
+
+				trailVertices.append(sf::Vertex(trail[i - 1].position, trailColour));
+                trailVertices.append(sf::Vertex(trail[i].position, trailColour));
+			}
+        }
+
+        window.draw(trailVertices);
+
     }
 
     void PhysicsEngine::draw(sf::RenderWindow& window, bool showVelocity, bool showTrails, bool showDebug)
     {
         // draw particles
-
+        drawBatchedGlows(window);
         // draw motion trails
-
         if (showTrails)
         {
             for (auto& body : bodies)
             {
                 body->drawMotionTrail(window);
             }
+        drawBatchedTrails(window);
         }
 
         // draw bodies (glows, main shapes, cores, rotation indicators)

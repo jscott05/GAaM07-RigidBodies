@@ -35,7 +35,7 @@ public:
     static constexpr float TRAIL_UPDATE_INTERVAL = 0.05f; // add a point every 0.05s 
     float trailTimer; //time until the next trail point 
 
-    std::vector<CollisionInfo> collisionInfo;
+    std::vector<CollisionInfo> collisionInfos;
 
     //debug 
     sf::Vector2f lastImpulse;
@@ -54,6 +54,8 @@ public:
     //rest thresholds 
     static constexpr float REST_VELOCITY_THRESHOLD = 5.0f;
     static constexpr float REST_ACCELERATION_THRESHOLD = 10.0f;
+
+    static constexpr float REST_ANGULAR_VELOCITY_THRESHOLD = 0.1f;   // copied from github idk the val
 
     RigidBody(sf::Vector2f pos, float r, float m, sf::Color col, bool stat = false);
 
@@ -98,6 +100,7 @@ public:
     float getInertia() const { return inertia; }
 
     bool getIsStatic() const { return isStatic; }
+    bool getIsResting() const { return isResting; }
     sf::Color getColour() const { return colour; }
     const std::deque<MotionTrail>& getMotionTrail() const { return motionTrail; }
 
